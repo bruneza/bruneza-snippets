@@ -1,0 +1,56 @@
+# ==========================================
+# WORDPRESS CONTENT CLEANUP & MALWARE REMOVAL COMMANDS
+# ==========================================
+
+# 1. Remove all PHP files inside uploads
+find wp-content/uploads -type f -name "*.php" -exec rm -f {} \;
+
+# 2. Remove all .htaccess files inside uploads
+find wp-content/uploads -type f -name ".htaccess" -exec rm -f {} \;
+
+# 3. Remove suspicious PHP files inside cache and backup folders
+find wp-content/cache -type f -name "*.php" -exec rm -f {} \;
+find wp-content/backups -type f -name "*.php" -exec rm -f {} \;
+
+# 4. Remove hidden or double-extension malicious files
+find wp-content -type f -name ".*.php" -exec rm -f {} \;
+find wp-content -type f -name "*.php.*" -exec rm -f {} \;
+
+# 5. Remove suspicious file types used by malware
+find wp-content -type f \( -name "*.ico" -o -name "*.suspected" -o -name "*.bak" -o -name "*.swp" -o -name "*.tmp" \) -exec rm -f {} \;
+
+# 6. Find large or recently modified PHP files for manual inspection
+find wp-content -type f -name "*.php" -size +200k -ls
+find wp-content -type f -name "*.php" -mtime -2 -ls
+
+# 7. Remove empty folders (cleanup optimization)
+find wp-content -type d -empty -delete
+
+# 8. Fix permissions for WordPress directories and files
+find wp-content -type d -exec chmod 755 {} \;
+find wp-content -type f -exec chmod 644 {} \;
+
+# 9. Optional — reset ownership if permissions cause errors
+sudo chown -R $USER:$USER wp-content
+
+# 10. Harden uploads directory to block PHP execution
+cat << 'EOF' > wp-content/uploads/.htaccess
+<FilesMatch "\.php$">
+    Deny from all
+</FilesMatch>
+EOF
+
+# 11. Search for suspicious functions (manual malware scan)
+grep -R "base64_decode" wp-content/
+grep -R "eval(" wp-content/
+grep -R "gzinflate" wp-content/
+grep -R "shell_exec" wp-content/
+
+# ==========================================
+# USAGE NOTES
+# ==========================================
+# - Run these commands from your WordPress root (e.g., public_html)
+# - Start by running the find commands without -exec rm to preview results
+# - Backup before deleting or modifying anything
+# - Adjust paths if wp-content is located elsewhere
+# - Use selectively; not every site requires every command
